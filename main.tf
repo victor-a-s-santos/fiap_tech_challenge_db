@@ -3,17 +3,18 @@ provider "aws" {
 }
 
 resource "aws_db_instance" "default" {
-  allocated_storage    = 2
-  max_allocated_storage = 20
   engine               = "postgres"
   engine_version       = "14"
-  instance_class       = "db.t3.micro"
   db_name                 = "dbFiapTechChallenge"
   username             = "fiap"
   password             = "admin123456"
   parameter_group_name = "default.postgres14"
   port     = 5432
   skip_final_snapshot  = true
+  instance_class           = "db.t3.medium"
+
+  allocated_storage     = 2
+  max_allocated_storage = 20
 
   publicly_accessible = true
 
