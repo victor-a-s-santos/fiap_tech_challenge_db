@@ -13,7 +13,7 @@ resource "aws_db_instance" "default" {
   skip_final_snapshot  = true
   instance_class           = "db.t3.medium"
 
-  allocated_storage     = 2
+  allocated_storage     = 10
   max_allocated_storage = 20
 
   publicly_accessible = true
