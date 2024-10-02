@@ -4,7 +4,7 @@ provider "aws" {
 
 resource "aws_db_instance" "default" {
   allocated_storage    = 2
-  max_allocated_storage = 4
+  max_allocated_storage = 20
   engine               = "postgres"
   engine_version       = "14"
   instance_class       = "db.t3.micro"
