@@ -8,7 +8,7 @@ resource "aws_db_instance" "default" {
   engine               = "postgres"
   engine_version       = "14"
   instance_class       = "db.t3.micro"
-  db_name                 = "db-fiap-tech-challenge"
+  db_name                 = "dbFiapTechChallenge"
   username             = "admin"
   password             = "admin123456"
   parameter_group_name = "default.postgres14"
