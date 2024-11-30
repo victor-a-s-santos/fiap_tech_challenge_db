@@ -11,7 +11,7 @@ resource "aws_db_instance" "default" {
   parameter_group_name = "default.postgres14"
   port     = 5432
   skip_final_snapshot  = true
-  instance_class           = "db.t3.medium"
+  instance_class           = "db.t4g.micro"
 
   allocated_storage     = 10
   max_allocated_storage = 20
