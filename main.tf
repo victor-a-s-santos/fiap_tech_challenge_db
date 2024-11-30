@@ -10,6 +10,14 @@ resource "aws_vpc" "default" {
   }
 }
 
+resource "aws_internet_gateway" "default" {
+  vpc_id = aws_vpc.default.id
+
+  tags = {
+    Name = "default-internet-gateway"
+  }
+}
+
 resource "aws_subnet" "subnet_a" {
   vpc_id            = aws_vpc.default.id
   cidr_block        = "10.0.1.0/24" 
@@ -28,6 +36,29 @@ resource "aws_subnet" "subnet_b" {
   tags = {
     Name = "subnet-b"
   }
+}
+
+resource "aws_route_table" "default" {
+  vpc_id = aws_vpc.default.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.default.id
+  }
+
+  tags = {
+    Name = "default-route-table"
+  }
+}
+
+resource "aws_route_table_association" "subnet_a" {
+  subnet_id      = aws_subnet.subnet_a.id
+  route_table_id = aws_route_table.default.id
+}
+
+resource "aws_route_table_association" "subnet_b" {
+  subnet_id      = aws_subnet.subnet_b.id
+  route_table_id = aws_route_table.default.id
 }
 
 resource "aws_db_subnet_group" "default" {
