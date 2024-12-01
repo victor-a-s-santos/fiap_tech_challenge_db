@@ -2,122 +2,73 @@ provider "aws" {
   region = "us-east-1" 
 }
 
-resource "aws_vpc" "default" {
-  cidr_block = "10.0.0.0/16"
+data "aws_availability_zones" "available" {}
 
-  enable_dns_support   = true  # Habilitar resolução DNS
-  enable_dns_hostnames = true  # Habilitar nomes de host DNS
-  tags = {
-    Name = "rds-fiap-vpc"
-  }
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "2.77.0"
+
+  name                 = "fiap"
+  cidr                 = "10.0.0.0/16"
+  azs                  = data.aws_availability_zones.available.names
+  public_subnets       = ["10.0.4.0/24", "10.0.5.0/24", "10.0.6.0/24"]
+  enable_dns_hostnames = true
+  enable_dns_support   = true
 }
 
-resource "aws_internet_gateway" "default" {
-  vpc_id = aws_vpc.default.id
-
-  tags = {
-    Name = "default-internet-gateway"
-  }
-}
-
-resource "aws_subnet" "subnet_a" {
-  vpc_id            = aws_vpc.default.id
-  cidr_block        = "10.0.1.0/24" 
-  availability_zone = "us-east-1a"
+resource "aws_db_subnet_group" "fiap" {
+  name       = "fiap"
+  subnet_ids = module.vpc.public_subnets
 
   tags = {
-    Name = "subnet-a"
+    Name = "Fiap"
   }
 }
 
-resource "aws_subnet" "subnet_b" {
-  vpc_id            = aws_vpc.default.id
-  cidr_block        = "10.0.2.0/24" 
-  availability_zone = "us-east-1b"
-
-  tags = {
-    Name = "subnet-b"
-  }
-}
-
-resource "aws_route_table" "default" {
-  vpc_id = aws_vpc.default.id
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.default.id
-  }
-
-  tags = {
-    Name = "default-route-table"
-  }
-}
-
-resource "aws_route_table_association" "subnet_a" {
-  subnet_id      = aws_subnet.subnet_a.id
-  route_table_id = aws_route_table.default.id
-}
-
-resource "aws_route_table_association" "subnet_b" {
-  subnet_id      = aws_subnet.subnet_b.id
-  route_table_id = aws_route_table.default.id
-}
-
-resource "aws_db_subnet_group" "default" {
-  name       = "rds-subnet-group"
-  description = "Subnet group para RDS"
-  subnet_ids = [
-    aws_subnet.subnet_a.id,
-    aws_subnet.subnet_b.id,
-  ]
-
-  tags = {
-    Name = "rds-subnet-group"
-  }
-}
-
-resource "aws_security_group" "rds_sg" {
-  name        = "rds-security-group"
-  description = "Allow access to PostgreSQL on port 5432"
-  vpc_id      = aws_vpc.default.id
+resource "aws_security_group" "rds" {
+  name   = "fiap_rds"
+  vpc_id = module.vpc.vpc_id
 
   ingress {
     from_port   = 5432
     to_port     = 5432
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"] 
+    cidr_blocks = ["0.0.0.0/0"]
   }
 
   egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
 
   tags = {
-    Name = "rds-security-group"
+    Name = "fiap_rds"
   }
 }
 
-resource "aws_db_instance" "default" {
-  db_subnet_group_name = aws_db_subnet_group.default.name
-  engine               = "postgres"
-  engine_version       = "14"
-  db_name                 = "dbFiapTechChallenge"
-  username             = "fiap"
-  password             = "admin123456"
-  parameter_group_name = "default.postgres14"
-  port     = 5432
-  skip_final_snapshot  = true
-  instance_class           = "db.t4g.micro"
+resource "aws_db_parameter_group" "fiap" {
+  name   = "fiap"
+  family = "postgres14"
 
-  allocated_storage     = 10
-  max_allocated_storage = 20
-
-  publicly_accessible = true
-
-  tags = {
-    Name = "terraform-rds-fiap-tech-challenge"
+  parameter {
+    name  = "log_connections"
+    value = "1"
   }
+}
+
+resource "aws_db_instance" "fiap" {
+  identifier             = "fiap"
+  instance_class         = "db.t3.micro"
+  allocated_storage      = 5
+  engine                 = "postgres"
+  engine_version         = "14"
+  username               = "fiap"
+  password               = "admin123456"
+  db_subnet_group_name   = aws_db_subnet_group.fiap.name
+  vpc_security_group_ids = [aws_security_group.rds.id]
+  parameter_group_name   = aws_db_parameter_group.fiap.name
+  publicly_accessible    = true
+  skip_final_snapshot    = true
 }
